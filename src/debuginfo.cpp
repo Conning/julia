@@ -382,16 +382,21 @@ public:
                     triggered_linfos.push_back(linfo);
                 linfo_in_flight.erase(linfo_it);
                 const char *F = linfo->functionObjectsDecls.functionObject;
-                if (!linfo->fptr && F && sName.equals(F)) {
-                    int jlcall_api = jl_jlcall_api(F);
-                    if (linfo->inferred || jlcall_api != JL_API_GENERIC) {
-                        linfo->jlcall_api = jlcall_api;
-                        linfo->fptr = (jl_fptr_t)(uintptr_t)Addr;
+                const char *specF = linfo->functionObjectsDecls.specFunctionObject;
+                if (linfo->invoke == jl_fptr_trampoline) {
+                    if (specF && sName.equals(specF)) {
+                        linfo->specptr.fptr = (void*)(uintptr_t)Addr;
+                        if (!strcmp(F, "jl_fptr_args"))
+                            linfo->invoke = &jl_fptr_args;
+                        else if (!strcmp(F, "jl_fptr_sparam"))
+                            linfo->invoke = &jl_fptr_sparam;
                     }
-                    else {
-                        linfo->unspecialized_ducttape = (jl_fptr_t)(uintptr_t)Addr;
+                    else if (sName.equals(F)) {
+                        linfo->invoke = (jl_callptr_t)(uintptr_t)Addr;
                     }
                 }
+                if (!sName.equals(specF ? specF : F))
+                    linfo = NULL;
             }
             if (linfo)
                 linfomap[Addr] = std::make_pair(Size, linfo);
