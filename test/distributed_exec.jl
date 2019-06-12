@@ -46,6 +46,26 @@ function reuseport_tests()
     @test all(p -> p in results, procs())
 end
 
+# Test failure during worker setup
+old_stderr = STDERR
+stderr_out, stderr_in = redirect_stderr()
+try
+    (nprocs() > 1) && rmprocs(workers())
+    npids = addprocs(1; topology=:all_to_all) #, lazy=false)
+    @test length(npids) == 1
+    @test nprocs() == 2
+    lsock = listenany(ip"127.0.0.1", 20000)
+    Distributed.PGRP.workers[2].config.connect_at=("127.0.0.1", lsock[1])
+    close(lsock[2])
+    npids = addprocs_with_testenv(1; topology=:all_to_all)#, lazy=false)
+    @test length(npids) == 0
+    @test nprocs() == 2
+    (nprocs() > 1) && rmprocs(workers())
+finally
+    redirect_stderr(old_stderr)
+    close(stderr_in)
+end
+
 # Test that the client port is reused. SO_REUSEPORT may not be supported on
 # all UNIX platforms, Linux kernels prior to 3.9 and older versions of OSX
 if is_unix()
@@ -1726,5 +1746,5 @@ end == true
 
 # Run topology tests last after removing all workers, since a given
 # cluster at any time only supports a single topology.
-rmprocs(workers())
+(nprocs() > 1) && rmprocs(workers())
 include("topology.jl")
