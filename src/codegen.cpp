@@ -1106,7 +1106,10 @@ jl_llvm_functions_t jl_compile_linfo(jl_method_instance_t **pli, jl_code_info_t 
         else if (!src) {
             // If the caller didn't provide the source,
             // try to infer it for ourself, but first, re-check if it's already compiled.
-            assert(li->min_world <= world && li->max_world >= world);
+
+	    // Commented out assert on 10 Dec 2019, 
+	    //   see https://github.com/JuliaLang/julia/issues/29498#issuecomment-427252403
+            // assert(li->min_world <= world && li->max_world >= world);
             if ((params->cached && decls.functionObject != NULL) || li->invoke == jl_fptr_const_return)
                 goto locked_out;
 
