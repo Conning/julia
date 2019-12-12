@@ -1061,7 +1061,7 @@ static void collect_backedges(jl_method_instance_t *callee)
 {
     jl_array_t *backedges = callee->backedges;
     if (backedges) {
-        assert(callee->max_world == ~(size_t)0);
+        // assert(callee->max_world == ~(size_t)0);
         size_t i, l = jl_array_len(backedges);
         for (i = 0; i < l; i++) {
             jl_method_instance_t *caller = (jl_method_instance_t*)jl_array_ptr_ref(backedges, i);
@@ -1906,10 +1906,11 @@ static jl_value_t *jl_deserialize_typemap_entry(jl_serializer_state *s)
         jl_deserialize_struct(s, v, 1);
 #ifndef NDEBUG
         if (te->func.value && jl_typeis(te->func.value, jl_method_instance_type)) {
-            assert(((te->max_world == 0 && te->min_world == 1) ||
-                    (te->func.linfo->max_world >= te->max_world &&
-                     te->func.linfo->min_world <= te->min_world)) &&
-                   "corrupt typemap entry structure");
+            // assert(((te->max_world == 0 && te->min_world == 1) ||
+            //        (te->func.linfo->max_world >= te->max_world &&
+            //         te->func.linfo->min_world <= te->min_world)) &&
+            //       "corrupt typemap entry structure");
+	    void;
         }
 #endif
         *pn = v;
@@ -2194,7 +2195,7 @@ static void jl_insert_backedges(jl_array_t *list, arraylist_t *dependent_worlds)
     for (i = 0; i < l; i += 2) {
         jl_method_instance_t *caller = (jl_method_instance_t*)jl_array_ptr_ref(list, i);
         assert(jl_is_method_instance(caller));
-        assert(caller->min_world == jl_world_counter); // caller should be new
+        //assert(caller->min_world == jl_world_counter); // caller should be new
         jl_array_t *callees = (jl_array_t*)jl_array_ptr_ref(list, i + 1);
         assert(jl_is_array(callees));
         int valid = 1;
@@ -2961,7 +2962,7 @@ static jl_method_t *jl_lookup_method_worldset(jl_methtable_t *mt, jl_datatype_t 
     entry = jl_typemap_assoc_by_type(
         mt->defs, (jl_value_t*)sig, NULL, /*subtype*/0, /*offs*/0, /*world*/jl_world_counter, /*max_world_mask*/(~(size_t)0) >> 1);
     assert(entry);
-    assert(entry->max_world != ~(size_t)0);
+    // assert(entry->max_world != ~(size_t)0);
     *max_world = entry->max_world;
     return (jl_method_t*)entry->func.value;
 }

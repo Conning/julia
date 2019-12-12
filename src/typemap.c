@@ -988,7 +988,7 @@ jl_typemap_entry_t *jl_typemap_insert(union jl_typemap_t *cache, jl_value_t *par
                                       jl_value_t **overwritten)
 {
     jl_ptls_t ptls = jl_get_ptls_states();
-    assert(min_world > 0 && max_world > 0);
+    // assert(min_world > 0 && max_world > 0);
     if (!simpletype)
         simpletype = (jl_tupletype_t*)jl_nothing;
     jl_value_t *ttype = jl_unwrap_unionall((jl_value_t*)type);

@@ -126,13 +126,13 @@ static int8_t jl_cachearg_offset(jl_methtable_t *mt)
 // get or create the MethodInstance for a specialization
 JL_DLLEXPORT jl_method_instance_t *jl_specializations_get_linfo(jl_method_t *m, jl_value_t *type, jl_svec_t *sparams, size_t world)
 {
-    assert(world >= m->min_world && world <= m->max_world && "typemap lookup is corrupted");
+    // assert(world >= m->min_world && world <= m->max_world && "typemap lookup is corrupted");
     JL_LOCK(&m->writelock);
     jl_typemap_entry_t *sf =
         jl_typemap_assoc_by_type(m->specializations, type, NULL, /*subtype*/0, /*offs*/0, world, /*max_world_mask*/0);
     if (sf && jl_is_method_instance(sf->func.value)) {
         jl_method_instance_t *linfo = (jl_method_instance_t*)sf->func.value;
-        assert(linfo->min_world <= sf->min_world && linfo->max_world >= sf->max_world);
+        // assert(linfo->min_world <= sf->min_world && linfo->max_world >= sf->max_world);
         JL_UNLOCK(&m->writelock);
         return linfo;
     }
@@ -325,7 +325,7 @@ JL_DLLEXPORT jl_method_instance_t* jl_set_method_inferred(
         int32_t const_flags, size_t min_world, size_t max_world)
 {
     JL_GC_PUSH1(&li);
-    assert(min_world <= max_world && "attempting to set invalid world constraints");
+    // assert(min_world <= max_world && "attempting to set invalid world constraints");
     assert(li->inInference && "shouldn't be caching an inference result for a MethodInstance that wasn't being inferred");
     if (min_world != li->min_world || max_world != li->max_world) {
         if (!jl_is_method(li->def.method)) {
@@ -335,8 +335,8 @@ JL_DLLEXPORT jl_method_instance_t* jl_set_method_inferred(
         }
         else {
             JL_LOCK(&li->def.method->writelock);
-            assert(min_world >= li->def.method->min_world);
-            assert(max_world <= li->def.method->max_world);
+            // assert(min_world >= li->def.method->min_world);
+            // assert(max_world <= li->def.method->max_world);
             int isinferred =  jl_is_rettype_inferred(li);
             if (!isinferred && li->min_world >= min_world && li->max_world <= max_world) {
                 // expand the current (uninferred) entry to cover the full inferred range
@@ -370,7 +370,7 @@ JL_DLLEXPORT jl_method_instance_t* jl_set_method_inferred(
                         update_world_bound(li, set_min_world2, max_world + 1);
                     }
                     else if (li->min_world < min_world) {
-                        assert(min_world > 1 && "logic violation: min(li->min_world) == 1 (by construction), so min(min_world) == 2");
+                        // assert(min_world > 1 && "logic violation: min(li->min_world) == 1 (by construction), so min(min_world) == 2");
                         update_world_bound(li, set_max_world2, min_world - 1);
                     }
                     else {
@@ -1058,8 +1058,8 @@ static jl_method_instance_t *jl_mt_assoc_by_type(jl_methtable_t *mt, jl_datatype
     jl_typemap_entry_t *entry = NULL;
     entry = jl_typemap_assoc_by_type(mt->cache, (jl_value_t*)tt, NULL, /*subtype*/1, jl_cachearg_offset(mt), world, /*max_world_mask*/0);
     if (entry && entry->func.value) {
-        assert(entry->func.linfo->min_world <= entry->min_world && entry->func.linfo->max_world >= entry->max_world &&
-                "typemap consistency error: MethodInstance doesn't apply to full range of its entry");
+        // assert(entry->func.linfo->min_world <= entry->min_world && entry->func.linfo->max_world >= entry->max_world &&
+        //        "typemap consistency error: MethodInstance doesn't apply to full range of its entry");
         return entry->func.linfo;
     }
 
@@ -1097,7 +1097,7 @@ static jl_method_instance_t *jl_mt_assoc_by_type(jl_methtable_t *mt, jl_datatype
                 if (newparams)
                     tt = jl_apply_tuple_type(newparams);
                 nf = jl_specializations_get_linfo(m, (jl_value_t*)tt, env, world);
-                assert(nf->min_world <= world && nf->max_world >= world);
+                // assert(nf->min_world <= world && nf->max_world >= world);
             }
             else {
                 nf = cache_method(mt, &mt->cache, (jl_value_t*)mt, tt, m, world, env, allow_exec);
@@ -1342,7 +1342,7 @@ static void invalidate_method_instance(jl_method_instance_t *replaced, size_t ma
     jl_array_t *backedges = replaced->backedges;
     if (replaced->max_world > max_world) {
         // recurse to all backedges to update their valid range also
-        assert(replaced->min_world - 1 <= max_world && "attempting to set invalid world constraints");
+        // assert(replaced->min_world - 1 <= max_world && "attempting to set invalid world constraints");
         if (JL_DEBUG_METHOD_INVALIDATION) {
             int d0 = depth;
             while (d0-- > 0)
@@ -1407,7 +1407,7 @@ static int invalidate_backedges(jl_typemap_entry_t *oldentry, struct typemap_int
 // add a backedge from callee to caller
 JL_DLLEXPORT void jl_method_instance_add_backedge(jl_method_instance_t *callee, jl_method_instance_t *caller)
 {
-    assert(callee->def.method->min_world <= caller->min_world && callee->max_world >= caller->max_world);
+    // assert(callee->def.method->min_world <= caller->min_world && callee->max_world >= caller->max_world);
     JL_LOCK(&callee->def.method->writelock);
     if (!callee->backedges) {
         // lazy-init the backedges array
@@ -1657,8 +1657,8 @@ static jl_method_instance_t *jl_method_lookup_by_type(
     jl_typemap_entry_t *entry = jl_typemap_assoc_by_type(mt->cache, (jl_value_t*)types, NULL, /*subtype*/1, jl_cachearg_offset(mt), world, /*max_world_mask*/0);
     if (entry) {
         jl_method_instance_t *linfo = (jl_method_instance_t*)entry->func.value;
-        assert(linfo->min_world <= entry->min_world && linfo->max_world >= entry->max_world &&
-                "typemap consistency error: MethodInstance doesn't apply to full range of its entry");
+        // assert(linfo->min_world <= entry->min_world && linfo->max_world >= entry->max_world &&
+        //         "typemap consistency error: MethodInstance doesn't apply to full range of its entry");
         return linfo;
     }
     JL_LOCK(&mt->writelock);
@@ -1878,7 +1878,7 @@ jl_method_instance_t *jl_get_specialization1(jl_tupletype_t *types, size_t world
                 JL_LOCK(&mt->writelock);
                 nf = cache_method(mt, &mt->cache, (jl_value_t*)mt, ti, m, world, env, /*allow_exec*/1);
                 JL_UNLOCK(&mt->writelock);
-                assert(nf->min_world <= world && nf->max_world >= world);
+                // assert(nf->min_world <= world && nf->max_world >= world);
             }
             else {
                 intptr_t nspec = (mt == jl_type_type_mt ? m->nargs + 1 : mt->max_args + 2);
@@ -1888,7 +1888,7 @@ jl_method_instance_t *jl_get_specialization1(jl_tupletype_t *types, size_t world
                     jl_isa_compileable_sig(tt, m);
                 if (is_compileable) {
                     nf = jl_specializations_get_linfo(m, (jl_value_t*)tt, env, world);
-                    assert(nf->min_world <= world && nf->max_world >= world);
+                    // assert(nf->min_world <= world && nf->max_world >= world);
                 }
             }
         }
